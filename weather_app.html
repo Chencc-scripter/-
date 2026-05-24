@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Weather</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            color: white;
+            background: #5AC8FA;
+            transition: background-color 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Weather Background Colors */
+        body.bg-sunny { background: #5AC8FA; }
+        body.bg-cloudy { background: #8E8E93; }
+        body.bg-rain { background: #5856D6; }
+        body.bg-storm { background: #1C1C1E; }
+        body.bg-snow { background: #E5E5EA; color: #1C1C1E; }
+        body.bg-night { background: #1C1C1E; }
+        body.bg-fog { background: #AEAEB2; }
+        body.bg-alert {
+            background: #00FFFF;
+            color: #000000;
+        }
+
+        /* ===== PORTRAIT (Mobile) ===== */
+        .weather-scroll {
+            height: 100vh;
+            height: 100dvh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+        .weather-scroll::-webkit-scrollbar { display: none; }
+
+        .content {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .location {
+            font-size: 34px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .sub-location {
+            font-size: 15px;
+            font-weight: 400;
+            opacity: 0.7;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .temp-main {
+            font-size: 96px;
+            font-weight: 200;
+            line-height: 0.9;
+            letter-spacing: -3px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .temp-main .degree {
+            font-size: 48px;
+            font-weight: 400;
+            position: absolute;
+            top: 8px;
+            right: -36px;
+        }
+
+        .condition {
+            font-size: 22px;
+            font-weight: 500;
+            margin-top: 8px;
+            opacity: 0.9;
+        }
+
+        .high-low {
+            font-size: 17px;
+            font-weight: 400;
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+
+        /* Windy Map */
+        .map-section {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.15);
+            aspect-ratio: 16/9;
+            position: relative;
+        }
+
+        .map-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Hourly */
+        .hourly-section {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 16px;
+            padding: 16px 0;
+            border-top: 1px solid rgba(255,255,255,0.15);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            padding: 0 16px;
+            margin-bottom: 12px;
+        }
+
+        .hourly-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 0;
+            scrollbar-width: none;
+            padding: 0 8px;
+        }
+
+        .hourly-scroll::-webkit-scrollbar { display: none; }
+
+        .hour-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 60px;
+            padding: 8px 4px;
+            gap: 8px;
+        }
+
+        .hour-time {
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        .hour-icon {
+            font-size: 22px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        .hour-temp {
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .hour-rain {
+            font-size: 11px;
+            font-weight: 500;
+            color: #5AC8FA;
+            opacity: 0.9;
+        }
+
+        /* Daily */
+        .daily-section {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 8px;
+            padding: 16px 0;
+        }
+
+        .day-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            min-height: 48px;
+        }
+
+        .day-name {
+            width: 48px;
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .day-icon {
+            font-size: 20px;
+            width: 32px;
+            text-align: center;
+        }
+
+        .day-rain {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5AC8FA;
+            width: 40px;
+            text-align: right;
+            opacity: 0.9;
+        }
+
+        .day-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 120px;
+        }
+
+        .day-low, .day-high {
+            font-size: 17px;
+            font-weight: 500;
+            width: 32px;
+        }
+
+        .day-low {
+            opacity: 0.5;
+            text-align: right;
+        }
+
+        .day-high {
+            text-align: right;
+        }
+
+        .temp-track {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .temp-track-fill {
+            position: absolute;
+            height: 100%;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.6);
+        }
+
+        /* Metrics */
+        .metrics-section {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 8px;
+            padding: 16px 0;
+            border-top: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 0 16px;
+        }
+
+        .metric-card {
+            background: rgba(0,0,0,0.15);
+            border-radius: 16px;
+            padding: 16px;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            opacity: 0.6;
+            margin-bottom: 8px;
+        }
+
+        .metric-value-large {
+            font-size: 28px;
+            font-weight: 500;
+            margin-top: auto;
+        }
+
+        .metric-value-small {
+            font-size: 17px;
+            font-weight: 500;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .metric-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: white;
+        }
+
+        /* ===== LANDSCAPE / LARGE SCREEN ===== */
+        @media (min-aspect-ratio: 16/10) and (min-width: 900px), (orientation: landscape) and (min-width: 900px) {
+            .weather-scroll {
+                overflow-y: hidden;
+                overflow-x: auto;
+            }
+
+            .content {
+                min-height: auto;
+                height: 100vh;
+                flex-direction: row;
+                align-items: stretch;
+                justify-content: center;
+                padding: 40px 60px;
+                gap: 40px;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .left-column {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-width: 400px;
+                flex-shrink: 0;
+            }
+
+            .location {
+                font-size: 48px;
+                margin-bottom: 4px;
+            }
+
+            .sub-location {
+                font-size: 18px;
+                margin-bottom: 12px;
+            }
+
+            .temp-main {
+                font-size: 140px;
+                letter-spacing: -5px;
+            }
+
+            .temp-main .degree {
+                font-size: 60px;
+                right: -48px;
+                top: 12px;
+            }
+
+            .condition {
+                font-size: 28px;
+                margin-top: 12px;
+            }
+
+            .high-low {
+                font-size: 20px;
+                margin-top: 8px;
+            }
+
+            .map-section {
+                width: 100%;
+                max-width: 500px;
+                margin-top: 24px;
+                aspect-ratio: 16/10;
+            }
+
+            .right-column {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                flex: 1;
+                max-width: 600px;
+                gap: 16px;
+                overflow-y: auto;
+                padding-right: 8px;
+            }
+
+            .right-column::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .right-column::-webkit-scrollbar-thumb {
+                background: rgba(255,255,255,0.2);
+                border-radius: 2px;
+            }
+
+            .hourly-section,
+            .daily-section,
+            .metrics-section {
+                width: 100%;
+                max-width: none;
+                margin-top: 0;
+                border-top: 1px solid rgba(255,255,255,0.15);
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .hourly-scroll {
+                justify-content: flex-start;
+            }
+        }
+
+        /* ===== ALERT OVERLAY ===== */
+        .alert-overlay {
+            position: fixed;
+            inset: 0;
+            background: #00FFFF;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: alertIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .alert-overlay.active { display: flex; }
+        .alert-overlay.fade-out { animation: alertOut 0.6s ease forwards; }
+
+        @keyframes alertIn {
+            from { opacity: 0; transform: scale(1.1); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes alertOut {
+            to { opacity: 0; transform: scale(0.95); }
+        }
+
+        .bell-wrapper {
+            margin-bottom: 48px;
+            position: relative;
+        }
+
+        .bell {
+            width: 100px;
+            height: 100px;
+            animation: bellSwing 2.5s ease-in-out;
+            transform-origin: top center;
+        }
+
+        @keyframes bellSwing {
+            0% { transform: rotate(0deg); }
+            8% { transform: rotate(18deg); }
+            16% { transform: rotate(-14deg); }
+            24% { transform: rotate(10deg); }
+            32% { transform: rotate(-7deg); }
+            40% { transform: rotate(4deg); }
+            48% { transform: rotate(-2deg); }
+            56%, 100% { transform: rotate(0deg); }
+        }
+
+        .bell-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+        }
+
+        .bell-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 180px;
+            height: 180px;
+            border: 2px solid rgba(0,0,0,0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: ringPulse 2s ease-out;
+            opacity: 0;
+        }
+
+        @keyframes ringPulse {
+            0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+        }
+
+        .alert-text {
+            text-align: center;
+            color: #000000;
+            padding: 0 32px;
+            max-width: 500px;
+        }
+
+        .alert-location {
+            font-size: 24px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            opacity: 0.7;
+            letter-spacing: 0.5px;
+        }
+
+        .alert-main {
+            font-size: 40px;
+            font-weight: 300;
+            line-height: 1.3;
+            letter-spacing: -0.5px;
+        }
+
+        .alert-main strong {
+            font-weight: 500;
+        }
+
+        .alert-time {
+            font-size: 20px;
+            font-weight: 300;
+            margin-top: 20px;
+            opacity: 0.5;
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.2);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 900;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: background 0.3s;
+        }
+
+        .settings-btn:hover { background: rgba(0,0,0,0.3); }
+        .settings-btn svg { width: 20px; height: 20px; }
+
+        /* Settings Sheet */
+        .settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 950;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .settings-overlay.active { display: flex; }
+
+        .settings-sheet {
+            width: 100%;
+            max-width: 430px;
+            background: #1C1C1E;
+            border-radius: 24px 24px 0 0;
+            padding: 20px 0 40px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: sheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes sheetUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px;
+        }
+
+        .sheet-title { font-size: 20px; font-weight: 600; }
+
+        .sheet-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .setting-group {
+            padding: 0 20px;
+            margin-bottom: 24px;
+        }
+
+        .setting-group-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #8E8E93;
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+
+        .setting-cell {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .setting-info { flex: 1; }
+        .setting-name { font-size: 16px; font-weight: 400; }
+        .setting-desc { font-size: 13px; color: #8E8E93; margin-top: 2px; }
+
+        .toggle {
+            width: 50px;
+            height: 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+
+        .toggle.on { background: #34C759; }
+
+        .toggle-knob {
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .toggle.on .toggle-knob { transform: translateX(20px); }
+
+        .text-field {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: white;
+            font-size: 16px;
+            font-family: inherit;
+            width: 100%;
+            outline: none;
+            margin-top: 8px;
+        }
+
+        .text-field::placeholder { color: #8E8E93; }
+
+        /* Test Button */
+        .test-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: white;
+            color: #1C1C1E;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            z-index: 800;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .test-btn:hover { transform: scale(1.05); }
+        .test-btn.hidden { display: none; }
+
+        /* Loading */
+        .loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Accuracy indicator */
+        .accuracy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            opacity: 0.5;
+            margin-top: 4px;
+        }
+
+        .accuracy-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34C759;
+        }
+    </style>
+</head>
+<body class="bg-sunny">
+
+    <div class="loading" id="loading"><div class="spinner"></div></div>
+
+    <button class="settings-btn" onclick="openSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 17.66l-4.24 4.24M23 12h-6m-6 0H1m20.24 4.24l-4.24-4.24M6.34 6.34L2.1 2.1"/>
+        </svg>
+    </button>
+
+    <div class="weather-scroll" id="mainScroll">
+        <div class="content">
+            <!-- Left Column -->
+            <div class="left-column">
+                <div class="location" id="locationName">定位中...</div>
+                <div class="sub-location" id="subLocation">正在获取精确位置...</div>
+
+                <div class="hero">
+                    <div class="temp-main">
+                        <span id="currentTemp">--</span><span class="degree">°</span>
+                    </div>
+                    <div class="condition" id="conditionText">--</div>
+                    <div class="high-low">
+                        最高: <span id="highTemp">--</span>° 最低: <span id="lowTemp">--</span>°
+                    </div>
+                    <div class="accuracy-badge" id="accuracyBadge">
+                        <span class="accuracy-dot"></span>
+                        <span id="accuracyText">GPS 高精度定位中</span>
+                    </div>
+                </div>
+
+                <!-- Windy Map Embed -->
+                <div class="map-section" id="mapSection">
+                    <iframe 
+                        class="map-iframe"
+                        id="windyMap"
+                        src="https://embed.windy.com/embed2.html?lat=31.23&lon=121.47&zoom=10&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1"
+                        allow="fullscreen"
+                        loading="lazy"
+                        title="Weather Radar">
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="right-column">
+                <div class="hourly-section">
+                    <div class="section-label">每小时预报</div>
+                    <div class="hourly-scroll" id="hourlyList"></div>
+                </div>
+
+                <div class="daily-section">
+                    <div class="section-label">未来7天</div>
+                    <div id="dailyList"></div>
+                </div>
+
+                <div class="metrics-section">
+                    <div class="section-label">详细数据</div>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-title">湿度</div>
+                            <div class="metric-value-large" id="humidity">--<span style="font-size:20px;opacity:0.7">%</span></div>
+                            <div class="metric-value-small" id="humidityDesc">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">体感温度</div>
+                            <div class="metric-value-large" id="feelsLike">--°</div>
+                            <div class="metric-value-small" id="feelsDesc">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">紫外线指数</div>
+                            <div class="metric-value-large" id="uvIndex">--</div>
+                            <div class="metric-value-small">--</div>
+                            <div class="metric-bar"><div class="metric-bar-fill" id="uvBar" style="width:0%"></div></div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">风速</div>
+                            <div class="metric-value-large" id="windSpeed">--<span style="font-size:20px;opacity:0.7"> km/h</span></div>
+                            <div class="metric-value-small" id="windDir">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">能见度</div>
+                            <div class="metric-value-large" id="visibility">--<span style="font-size:20px;opacity:0.7"> km</span></div>
+                            <div class="metric-value-small">--</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">气压</div>
+                            <div class="metric-value-large" id="pressure">--<span style="font-size:20px;opacity:0.7"> hPa</span></div>
+                            <div class="metric-value-small">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Overlay -->
+    <div class="alert-overlay" id="alertOverlay">
+        <div class="bell-wrapper">
+            <div class="bell">
+                <svg class="bell-svg" viewBox="0 0 100 100" fill="none">
+                    <path d="M50 15 C50 15 35 15 35 30 L35 55 C35 65 25 70 25 75 L75 75 C75 70 65 65 65 55 L65 30 C65 15 50 15 50 15Z" fill="#1C1C1E" stroke="#1C1C1E" stroke-width="2"/>
+                    <circle cx="50" cy="78" r="6" fill="#1C1C1E"/>
+                    <rect x="42" y="8" width="16" height="10" rx="3" fill="#1C1C1E"/>
+                </svg>
+            </div>
+            <div class="bell-ring"></div>
+        </div>
+        <div class="alert-text">
+            <div class="alert-location" id="alertLocation">--</div>
+            <div class="alert-main" id="alertMessage">将在 <strong>--</strong>后<br>--</div>
+            <div class="alert-time" id="alertTime">--</div>
+        </div>
+    </div>
+
+    <!-- Settings Sheet -->
+    <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings(event)">
+        <div class="settings-sheet" onclick="event.stopPropagation()">
+            <div class="sheet-header">
+                <div class="sheet-title">设置</div>
+                <button class="sheet-close" onclick="closeSettings()">×</button>
+            </div>
+            <div class="setting-group">
+                <div class="setting-group-title">位置</div>
+                <div class="setting-cell" style="flex-direction:column;align-items:stretch;">
+                    <div class="setting-info">
+                        <div class="setting-name">自定义位置</div>
+                        <div class="setting-desc">输入城市名称（将自动匹配区县）</div>
+                    </div>
+                    <input type="text" class="text-field" id="customLocation" placeholder="例如: 北京朝阳, 上海浦东..." value="">
+                </div>
+                <div class="setting-cell">
+                    <div class="setting-info"><div class="setting-name">高精度 GPS 定位</div><div class="setting-desc">精确到区县街道</div></div>
+                    <div class="toggle on" id="toggleAutoLoc" onclick="toggle(this,'autoLocate')"><div class="toggle-knob"></div></div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <div class="setting-group-title">预警</div>
+                <div class="setting-cell">
+                    <div class="setting-info"><div class="setting-name">天气预警</div><div class="setting-desc">天气变化时全屏提醒</div></div>
+                    <div class="toggle on" id="toggleAlert" onclick="toggle(this,'weatherAlert')"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="setting-cell">
+                    <div class="setting-info"><div class="setting-name">语音播报</div><div class="setting-desc">使用系统 TTS</div></div>
+                    <div class="toggle on" id="toggleTTS" onclick="toggle(this,'ttsEnabled')"><div class="toggle-knob"></div></div>
+                </div>
+                <div class="setting-cell">
+                    <div class="setting-info"><div class="setting-name">Roblox TTS</div><div class="setting-desc">使用 Roblox 音频</div></div>
+                    <div class="toggle" id="toggleRoblox" onclick="toggle(this,'robloxTTS')"><div class="toggle-knob"></div></div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <div class="setting-group-title">显示</div>
+                <div class="setting-cell">
+                    <div class="setting-info"><div class="setting-name">降雨动画</div><div class="setting-desc">主界面雨滴效果</div></div>
+                    <div class="toggle on" id="toggleRain" onclick="toggle(this,'rainAnimation')"><div class="toggle-knob"></div></div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <div class="setting-group-title">数据</div>
+                <div class="setting-cell">
+                    <div class="setting-info"><div class="setting-name">自动刷新</div><div class="setting-desc">每 10 分钟</div></div>
+                    <div class="toggle on" id="toggleRefresh" onclick="toggle(this,'autoRefresh')"><div class="toggle-knob"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="test-btn" id="testBtn" onclick="testAlert()">🔔</button>
+
+    <script>
+        const CFG = {
+            autoLocate: true, weatherAlert: true, ttsEnabled: true,
+            robloxTTS: false, rainAnimation: true, autoRefresh: true,
+            lat: 31.2304, lon: 121.4737, accuracy: 999999
+        };
+
+        const ICONS = {
+            0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️', 45: '🌫️', 48: '🌫️',
+            51: '🌦️', 53: '🌧️', 55: '🌧️', 56: '🌨️', 57: '🌨️',
+            61: '🌧️', 63: '🌧️', 65: '🌧️', 66: '🌨️', 67: '🌨️',
+            71: '🌨️', 73: '❄️', 75: '❄️', 77: '❄️',
+            80: '🌦️', 81: '🌧️', 82: '🌧️', 85: '🌨️', 86: '🌨️',
+            95: '⛈️', 96: '⛈️', 99: '⛈️'
+        };
+
+        const TEXTS = {
+            0: '晴朗', 1: '大部晴朗', 2: '多云', 3: '阴天',
+            45: '雾', 48: '雾凇', 51: '毛毛雨', 53: '小雨', 55: '中雨',
+            56: '冻雨', 57: '冻雨', 61: '小雨', 63: '中雨', 65: '大雨',
+            66: '冻雨', 67: '冻雨', 71: '小雪', 73: '中雪', 75: '大雪',
+            77: '雪粒', 80: '阵雨', 81: '强阵雨', 82: '暴雨',
+            85: '阵雪', 86: '阵雪', 95: '雷雨', 96: '雷暴', 99: '强雷暴'
+        };
+
+        const BG_MAP = {
+            0: 'bg-sunny', 1: 'bg-sunny', 2: 'bg-cloudy', 3: 'bg-cloudy',
+            45: 'bg-fog', 48: 'bg-fog', 51: 'bg-rain', 53: 'bg-rain',
+            55: 'bg-rain', 56: 'bg-rain', 57: 'bg-rain', 61: 'bg-rain',
+            63: 'bg-rain', 65: 'bg-rain', 66: 'bg-rain', 67: 'bg-rain',
+            71: 'bg-snow', 73: 'bg-snow', 75: 'bg-snow', 77: 'bg-snow',
+            80: 'bg-rain', 81: 'bg-rain', 82: 'bg-storm', 85: 'bg-snow',
+            86: 'bg-snow', 95: 'bg-storm', 96: 'bg-storm', 99: 'bg-storm'
+        };
+
+        // ===== HIGH PRECISION LOCATION =====
+        function getHighPrecisionLocation() {
+            const custom = document.getElementById('customLocation').value.trim();
+            if (custom) {
+                geocodeWithDistrict(custom);
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                document.getElementById('subLocation').textContent = '浏览器不支持定位';
+                fetchWeather();
+                return;
+            }
+
+            document.getElementById('subLocation').textContent = '正在使用 GPS 高精度定位...';
+            document.getElementById('accuracyText').textContent = 'GPS 高精度定位中';
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    CFG.lat = position.coords.latitude;
+                    CFG.lon = position.coords.longitude;
+                    CFG.accuracy = position.coords.accuracy;
+
+                    // Update accuracy badge
+                    const accuracy = Math.round(position.coords.accuracy);
+                    document.getElementById('accuracyText').textContent = 
+                        accuracy < 100 ? `GPS 精度 ±${accuracy}米` : 
+                        accuracy < 1000 ? `网络定位 ±${accuracy}米` : 
+                        `定位精度 ±${accuracy}米`;
+
+                    // Fetch district-level location name
+                    fetchDistrictLocation(CFG.lat, CFG.lon);
+
+                    // Update map immediately
+                    updateWindyMap();
+
+                    // Fetch weather
+                    fetchWeather();
+                },
+                error => {
+                    console.error('Location error:', error);
+                    document.getElementById('subLocation').textContent = '定位失败，使用默认位置';
+                    document.getElementById('accuracyText').textContent = '使用默认位置';
+                    document.getElementById('locationName').textContent = '上海';
+                    fetchWeather();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        // Fetch district-level location using BigDataCloud (free, no key needed for basic)
+        async function fetchDistrictLocation(lat, lon) {
+            try {
+                // Try BigDataCloud for detailed address
+                const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`);
+                const d = await r.json();
+
+                const city = d.city || d.locality || '';
+                const district = d.localityInfo?.administrative?.find(a => a.adminLevel === 6)?.name || 
+                                d.localityInfo?.administrative?.find(a => a.adminLevel === 4)?.name || '';
+
+                if (city && district) {
+                    document.getElementById('locationName').textContent = city;
+                    document.getElementById('subLocation').textContent = district;
+                } else if (city) {
+                    document.getElementById('locationName').textContent = city;
+                    document.getElementById('subLocation').textContent = '精确位置获取中...';
+                } else {
+                    document.getElementById('locationName').textContent = '当前位置';
+                    document.getElementById('subLocation').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                }
+            } catch(e) {
+                // Fallback to coordinates
+                document.getElementById('locationName').textContent = '当前位置';
+                document.getElementById('subLocation').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            }
+        }
+
+        // Geocode with district support
+        async function geocodeWithDistrict(name) {
+            document.getElementById('subLocation').textContent = '正在搜索位置...';
+            try {
+                const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=5&language=zh&format=json`);
+                const d = await r.json();
+
+                if (d.results && d.results.length > 0) {
+                    // Find best match with admin1 (province) info
+                    const best = d.results[0];
+                    CFG.lat = best.latitude;
+                    CFG.lon = best.longitude;
+
+                    document.getElementById('locationName').textContent = best.name || name;
+                    document.getElementById('subLocation').textContent = 
+                        best.admin1 ? `${best.admin1}${best.admin2 ? ' · ' + best.admin2 : ''}` : 
+                        `${CFG.lat.toFixed(4)}, ${CFG.lon.toFixed(4)}`;
+
+                    updateWindyMap();
+                    fetchWeather();
+                } else {
+                    document.getElementById('subLocation').textContent = '未找到该位置';
+                }
+            } catch(e) {
+                console.error(e);
+                document.getElementById('subLocation').textContent = '搜索失败';
+            }
+        }
+
+        // ===== WINDY MAP =====
+        function updateWindyMap() {
+            const iframe = document.getElementById('windyMap');
+            const zoom = CFG.accuracy < 100 ? 12 : CFG.accuracy < 1000 ? 10 : 8;
+
+            const url = `https://embed.windy.com/embed2.html?` +
+                `lat=${CFG.lat.toFixed(4)}&` +
+                `lon=${CFG.lon.toFixed(4)}&` +
+                `detailLat=${CFG.lat.toFixed(4)}&` +
+                `detailLon=${CFG.lon.toFixed(4)}&` +
+                `zoom=${zoom}&` +
+                `level=surface&` +
+                `overlay=radar&` +
+                `product=radar&` +
+                `menu=&` +
+                `message=true&` +
+                `marker=true&` +
+                `calendar=now&` +
+                `pressure=&` +
+                `type=map&` +
+                `location=coordinates&` +
+                `detail=&` +
+                `metricWind=km%2Fh&` +
+                `metricTemp=%C2%B0C&` +
+                `radarRange=-1`;
+
+            iframe.src = url;
+        }
+
+        // ===== WEATHER =====
+        async function fetchWeather() {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${CFG.lat}&longitude=${CFG.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,uv_index_max&timezone=auto&forecast_days=8`;
+                const r = await fetch(url);
+                const d = await r.json();
+                render(d);
+                checkAlert(d);
+                document.getElementById('loading').style.display = 'none';
+            } catch(e) { console.error(e); }
+        }
+
+        function render(d) {
+            const c = d.current, daily = d.daily, hourly = d.hourly;
+
+            document.body.className = BG_MAP[c.weather_code] || 'bg-sunny';
+            if (!c.is_day) document.body.classList.add('bg-night');
+
+            document.getElementById('currentTemp').textContent = Math.round(c.temperature_2m);
+            document.getElementById('conditionText').textContent = TEXTS[c.weather_code] || '未知';
+            document.getElementById('highTemp').textContent = Math.round(daily.temperature_2m_max[0]);
+            document.getElementById('lowTemp').textContent = Math.round(daily.temperature_2m_min[0]);
+
+            // Hourly
+            const hList = document.getElementById('hourlyList');
+            hList.innerHTML = '';
+            const now = new Date().getHours();
+            for (let i = 0; i < 24; i++) {
+                const idx = now + i;
+                if (idx >= hourly.time.length) break;
+                const hour = new Date(hourly.time[idx]).getHours();
+                const item = document.createElement('div');
+                item.className = 'hour-item';
+                const rainProb = hourly.precipitation_probability?.[idx];
+                item.innerHTML = `
+                    <div class="hour-time">${i === 0 ? '现在' : hour + '时'}</div>
+                    <div class="hour-icon">${ICONS[hourly.weather_code[idx]] || '☁️'}</div>
+                    <div class="hour-temp">${Math.round(hourly.temperature_2m[idx])}°</div>
+                    ${rainProb > 0 ? `<div class="hour-rain">${rainProb}%</div>` : ''}
+                `;
+                hList.appendChild(item);
+            }
+
+            // Daily
+            const dList = document.getElementById('dailyList');
+            dList.innerHTML = '';
+            const days = ['周日','周一','周二','周三','周四','周五','周六'];
+            const allMin = Math.min(...daily.temperature_2m_min);
+            const allMax = Math.max(...daily.temperature_2m_max);
+            const range = allMax - allMin || 1;
+
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(daily.time[i]);
+                const name = i === 0 ? '今天' : i === 1 ? '明天' : days[date.getDay()];
+                const low = Math.round(daily.temperature_2m_min[i]);
+                const high = Math.round(daily.temperature_2m_max[i]);
+                const left = ((low - allMin) / range) * 100;
+                const width = ((high - low) / range) * 100;
+                const rainProb = daily.precipitation_sum?.[i] > 0 ? Math.round(daily.precipitation_sum[i] * 10) + '%' : '';
+
+                const row = document.createElement('div');
+                row.className = 'day-row';
+                row.innerHTML = `
+                    <div class="day-name">${name}</div>
+                    <div class="day-icon">${ICONS[daily.weather_code[i]] || '☁️'}</div>
+                    <div class="day-rain">${rainProb}</div>
+                    <div class="day-range">
+                        <span class="day-low">${low}°</span>
+                        <div class="temp-track">
+                            <div class="temp-track-fill" style="left: ${left}%; width: ${Math.max(width, 8)}%"></div>
+                        </div>
+                        <span class="day-high">${high}°</span>
+                    </div>
+                `;
+                dList.appendChild(row);
+            }
+
+            // Metrics
+            document.getElementById('humidity').innerHTML = `${c.relative_humidity_2m}<span style="font-size:20px;opacity:0.7">%</span>`;
+            document.getElementById('humidityDesc').textContent = `露点 ${Math.round(c.temperature_2m - (100 - c.relative_humidity_2m) / 5)}°`;
+            document.getElementById('feelsLike').textContent = Math.round(c.apparent_temperature) + '°';
+            document.getElementById('feelsDesc').textContent = c.apparent_temperature > c.temperature_2m + 2 ? '较热' : c.apparent_temperature < c.temperature_2m - 2 ? '较凉' : '舒适';
+            document.getElementById('uvIndex').textContent = daily.uv_index_max[0].toFixed(0);
+            document.getElementById('uvBar').style.width = Math.min(daily.uv_index_max[0] / 11 * 100, 100) + '%';
+            document.getElementById('windSpeed').innerHTML = `${c.wind_speed_10m}<span style="font-size:20px;opacity:0.7"> km/h</span>`;
+            document.getElementById('windDir').textContent = ['北','东北','东','东南','南','西南','西','西北'][Math.round(c.wind_direction_10m / 45) % 8] + '风';
+        }
+
+        // ===== ALERT =====
+        function checkAlert(d) {
+            if (!CFG.weatherAlert) return;
+            const hourly = d.hourly;
+            const now = new Date().getHours();
+            for (let i = 1; i <= 3; i++) {
+                const idx = now + i;
+                if (idx >= hourly.time.length) break;
+                const code = hourly.weather_code[idx];
+                const isRain = [51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code);
+                const isSnow = [71,73,75,77,85,86].includes(code);
+                const isStorm = [95,96,99].includes(code);
+                if (isRain || isSnow || isStorm) {
+                    const type = isStorm ? '雷雨' : isSnow ? '降雪' : '下雨';
+                    triggerAlert(type, i * 60);
+                    break;
+                }
+            }
+        }
+
+        function triggerAlert(type, minutes) {
+            const loc = document.getElementById('locationName').textContent;
+            const district = document.getElementById('subLocation').textContent;
+            const timeStr = minutes <= 60 ? `${minutes}分钟后` : `${Math.floor(minutes/60)}小时${minutes%60}分钟后`;
+
+            document.getElementById('alertLocation').textContent = `${loc} · ${district}`;
+            document.getElementById('alertMessage').innerHTML = `将在 <strong>${timeStr}</strong><br>${type}`;
+            document.getElementById('alertTime').textContent = `预警时间 ${new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'})}`;
+
+            const overlay = document.getElementById('alertOverlay');
+            overlay.classList.add('active');
+            overlay.classList.remove('fade-out');
+
+            if (CFG.ttsEnabled) {
+                const text = `${loc}${district}将在${timeStr}${type}，请注意防范`;
+                if (CFG.robloxTTS) playRobloxAlert();
+                else speak(text);
+            }
+
+            setTimeout(() => {
+                overlay.classList.add('fade-out');
+                setTimeout(() => overlay.classList.remove('active', 'fade-out'), 600);
+            }, 8000);
+        }
+
+        function testAlert() { triggerAlert('下雨', 5); }
+
+        // ===== TTS =====
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'zh-CN';
+                u.rate = 0.9;
+                const voices = window.speechSynthesis.getVoices();
+                const v = voices.find(v => v.lang.includes('zh'));
+                if (v) u.voice = v;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function playRobloxAlert() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.frequency.value = 880;
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+            speak('天气预警：即将下雨，请注意防范');
+        }
+
+        // ===== SETTINGS =====
+        function openSettings() {
+            document.getElementById('settingsOverlay').classList.add('active');
+            document.getElementById('testBtn').classList.add('hidden');
+        }
+
+        function closeSettings(e) {
+            if (!e || e.target.id === 'settingsOverlay') {
+                document.getElementById('settingsOverlay').classList.remove('active');
+                document.getElementById('testBtn').classList.remove('hidden');
+                saveSettings();
+            }
+        }
+
+        function toggle(el, key) {
+            el.classList.toggle('on');
+            CFG[key] = el.classList.contains('on');
+            if (key === 'autoLocate' && CFG[key]) getHighPrecisionLocation();
+        }
+
+        function saveSettings() {
+            const loc = document.getElementById('customLocation').value.trim();
+            if (loc) CFG.customLocation = loc;
+            localStorage.setItem('weatherCfg', JSON.stringify(CFG));
+        }
+
+        function loadSettings() {
+            const s = localStorage.getItem('weatherCfg');
+            if (s) {
+                try {
+                    const p = JSON.parse(s);
+                    Object.assign(CFG, p);
+                    document.getElementById('toggleAutoLoc').classList.toggle('on', CFG.autoLocate);
+                    document.getElementById('toggleAlert').classList.toggle('on', CFG.weatherAlert);
+                    document.getElementById('toggleTTS').classList.toggle('on', CFG.ttsEnabled);
+                    document.getElementById('toggleRoblox').classList.toggle('on', CFG.robloxTTS);
+                    document.getElementById('toggleRain').classList.toggle('on', CFG.rainAnimation);
+                    document.getElementById('toggleRefresh').classList.toggle('on', CFG.autoRefresh);
+                    document.getElementById('customLocation').value = CFG.customLocation || '';
+                } catch(e) {}
+            }
+        }
+
+        // ===== INIT =====
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            if (CFG.autoLocate) getHighPrecisionLocation();
+            else {
+                updateWindyMap();
+                fetchWeather();
+            }
+            if (CFG.autoRefresh) setInterval(() => {
+                if (CFG.autoLocate) getHighPrecisionLocation();
+                else fetchWeather();
+            }, 600000);
+        });
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+    </script>
+</body>
+</html>
